@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+<canvas id="canvas" width="500" height="500" style="border:1px solid #000000;"></canvas>
+<div id="inventory"></div>
+<script src="./js/entities.js"></script>
+<script src="./js/inventory.js"></script>
+<script>
+var canvas = document.getElementById("canvas");
+ var ctx = canvas.getContext("2d");
+
+ 
+
+var HEIGHT = 360;
+var WIDTH =640;
+var CANVAS_HEIGHT = 360;
+var CANVAS_WIDTH =640;
+var paused = false;
+var timeWhenGameStarted = Date.now();//return time in ms
+     //player
+var frameCount = 0;
+var score = 0;
+var TILE_SIZE = 32; 
+//1. load the image one time
+var Img = {};
+Img.player = new Image();
+Img.player.src= "img/player.png";
+Img.enemy = new Image();
+Img.enemy.src= "img/bat.png";
+Img.bullet = new Image();
+Img.bullet.src= "img/bullet.png";
+Img.upgrade1 = new Image();
+Img.upgrade1.src= "img/upgrade1.png";
+Img.upgrade2 = new Image();
+Img.upgrade2.src= "img/upgrade2.png";
+Img.bee = new Image();
+Img.bee.src= "img/bee.png";
+
+let resizeCanvas = function(){
+    CANVAS_WIDTH = window.innerWidth -4;
+    CANVAS_HEIGHT = window.innerheight-4;
+    let ratio = 9/16;
+    if(CANVAS_HEIGHT<CANVAS_WIDTH/ratio)
+        CANVAS_WIDTH = CANVAS_HEIGHT*ratio;
+    else
+         CANVAS_HEIGHT = CANVAS_WIDTH*ratio;
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+         ctx.font ='30px Arial';
+        ctx.mozImageSmoothingEnabled = false;
+     ctx.msImageSmoothingEnabled = false;
+     
+     ctx.imageSmoothingEnabled = false;
+     canvas.style.width = ''+ CANVAS_WIDTH+'px';
+      canvas.style.height = ''+ CANVAS_HEIGHT+'px';
+
+}
+
+window.addEventListener('resize',function(){
+      resizeCanvas();
+});
+//step2:display the image
+//ctx.drawImage(Img,0,0);
+testCollisionRectRect = function(rect1,rect2){
+            return rect1.x <= rect2.x+rect2.width 
+                && rect2.x <= rect1.x+rect1.width
+                && rect1.y <= rect2.y + rect2.height
+                && rect2.y <= rect1.y + rect1.height;
+        }
+     
+document.onmousemove = function(mouse){
+			var mouseX = mouse.clientX - canvas.getBoundingClientRect().left;
+			var mouseY = mouse.clientY- canvas.getBoundingClientRect().top;
+		  
+            mouseX -= CANVAS_WIDTH/2;
+            mouseY -= CANVAS_HEIGHT/2;
+    
+        	player.aimAngle = Math.atan2(mouseY,mouseX) / Math.PI * 180;
+
+			/*if(mouseX<player.width/2){
+				mouseX = player.width/2;
+			}
+			if(mouseX >WIDTH - player.width/2){
+				mouseX= WIDTH - player.width/2;
+			}
+
+
+			if(mouseY<player.height/2){
+				mouseY = player.height/2;
+			}
+			if(mouseY > HEIGHT - player.height/2){
+				mouseY= HEIGHT - player.height/2;
+			}*/
+      }
+
+document.onmousedown = function(mouse){
+    if(mouse.which === 1)
+        player.pressingMouseLeft = true;
+    else
+        player.pressingMouseRight = true;
+}
+document.onmouseup = function(mouse){
+    if(mouse.which === 1)
+        player.pressingMouseLeft = false;
+    else
+        player.pressingMouseRight = false;
+} 
+document.oncontextmenu = function(mouse){//on right click
+    mouse.preventDefault();
+        } 
+document.onkeydown = function(event){
+    	if(event.keyCode === 68)//d
+    		player.pressingRight = true;
+        else if(event.keyCode === 83)//s
+    		player.pressingDown = true;
+    	else if(event.keyCode === 65)//a
+    		player.pressingLeft = true;
+    	else if(event.keyCode === 87)//w
+    		player.pressingUp = true;
+        else if(event.keyCode === 80)//p
+            paused = !paused;   	
+        }
+document.onkeyup = function(event){
+    	if(event.keyCode === 68)//d
+    		player.pressingRight = false;
+        if(event.keyCode === 83)//s
+    		player.pressingDown = false;
+    	if(event.keyCode === 65)//a
+    		player.pressingLeft = false;
+    	if(event.keyCode === 87)//w
+    		player.pressingUp = false;
+        }    
+update = function(){
+        if(paused){
+            ctx.fillText('paused',250,250);
+            return;
+        }
+     	ctx.clearRect(0,0,WIDTH,HEIGHT);
+        Maps.current.draw();
+     	frameCount++;
+     	score++;
+     	Bullet.update();
+        Upgrade.update();
+        Enemy.update();
+    	 
+	    player.update();	
+	    ctx.fillText(player.hp + " HP",0,30);
+	    ctx.fillText("Score:"+ score,200,30);
+	 }
+
+
+ var array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 502, 502, 502, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 502, 502, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+ 
+var array2D = [];
+for(var i = 0 ; i < 40; i++){
+    array2D[i] = [];
+    for(var j = 0 ; j < 40; j++){
+        array2D[i][j] = array[i * 40 + j];
+    }
+}
+
+Maps = function(id,imgSrc,grid){
+        var  self = {
+            id:id,
+            image:new Image(),
+            width:grid[0].length * TILE_SIZE,
+            height:grid.length * TILE_SIZE,
+            grid:grid,
+        }
+        self.image.src = imgSrc;
+        self.isPositionWall = function(pt){
+            var gridX = Math.floor(pt.x/TILE_SIZE);
+            var gridY = Math.floor(pt.y/TILE_SIZE);
+            if(gridX < 0 || gridX >= self.grid[0].length)
+                return true;
+            if(gridY < 0 || gridY >= self.grid.length)
+                return true;
+            return self.grid[gridY][gridX];
+
+        }
+        self.draw = function(){
+            var x = WIDTH/2 - player.x;
+            var y = HEIGHT/2 - player.y;
+            ctx.drawImage(self.image,0,0,self.image.width,self.image.height,x,y,self.image.width*2,self.image.height*2);
+     }
+     return self;
+    }
+Maps.current = Maps('field','img/map.png',array2D);
+
+	startNewGame = function(){
+        player.hp = 10;
+        score = 0;
+        timeWhenGameStarted = Date.now();
+        frameCount = 0;
+        enemyList = {};
+        upgradeList = {};
+        bulletList = {};
+        randomlyGenerateEnemy();
+        randomlyGenerateEnemy();
+        randomlyGenerateEnemy();
+        }
+     player = Player();
+     playerInventory = Inventory();
+  	 startNewGame();
+
+     setInterval(update,40);
+          /*function updateEnemy(){
+     	//enemy
+        enemy.x += enemy.spdx;
+        enemy.y += enemy.spdy;
+        ctx.fillText(enemy.name,enemy.x,enemy.y);
+        console.log('hello',enemy.x);
+     	if(enemy.x<0 || enemy.x>width){
+     		enemy.spdx = -enemy.spdx;
+     		console.log(message);
+     	}    	
+     	if(enemy.y<0 || enemy.y>height){
+     		console.log(message);
+     		enemy.spdy = -enemy.spdy;
+     	}
+     }
+        function updatePlayer(){
+        player.x += player.spdx;
+        player.y += player.spdy;
+        ctx.fillText(player.name,player.x,player.y);
+        console.log('hello',player.x);
+     	if(player.x<0 || player.x>width){
+     		player.spdx = -player.spdx;
+     		console.log(message);
+     	}     
+     	if(player.y<0 || player.y>height){
+     		console.log(message);
+     		player.spdy = -player.spdy;
+     	}
+     }*/
+
+  
+
+
+
+</script>
+</body>
+</html>
+
